@@ -70,6 +70,7 @@ nav .container{display:flex;align-items:center;justify-content:space-between;hei
 .navlinks a:hover{opacity:.6}
 .navbtns{display:flex;gap:10px}
 @media(max-width:820px){.navlinks{display:none}}
+@media(max-width:520px){.navbtns .btn.outline{display:none}.brand img{height:24px}}
 
 .hero{padding-block:86px 60px;
   background:radial-gradient(760px 300px at 12% 0%,var(--muted),transparent 70%)}
