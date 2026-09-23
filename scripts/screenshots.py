@@ -85,6 +85,10 @@ def main() -> int:
         page.goto(BASE + "/", wait_until="networkidle")
         page.screenshot(path=OUT / "landing.png")
         print("landing.png")
+        for sel, name in (("#trust", "landing-features.png"), (".cta2", "landing-cta.png")):
+            if page.locator(sel).count():
+                page.locator(sel).screenshot(path=OUT / name)
+                print(name)
 
         browser.close()
     return 0
