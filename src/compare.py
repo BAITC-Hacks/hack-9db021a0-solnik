@@ -102,14 +102,39 @@ def compare_units(before: dict[str, Unit], after: dict[str, Unit]) -> list[Findi
     return findings
 
 
-def compare_functions(before: dict[str, Unit], after: dict[str, Unit]) -> tuple[list[Finding], str]:
+def _after_pool(after: dict[str, Unit], after_clauses) -> tuple[list[str], list[tuple[str, object]]]:
+    """Все пункты комплекта «после» плюс отметка, чьей функцией пункт является.
+
+    Искать соответствие только среди функций директоров нельзя: функция могла
+    переехать в общий раздел — например, к обязанностям работников блока.
+    Тогда она никуда не потерялась, и помечать её потерей неверно.
+    """
+    owner: dict[str, str] = {}
+    for code, unit in after.items():
+        for fn in unit.functions:
+            owner[fn.number] = code
+
+    texts, meta = [], []
+    for c in after_clauses:
+        if not c.number or len(c.text) < 12:
+            continue
+        texts.append(c.text)
+        meta.append((owner.get(c.number, ""), c))
+    return texts, meta
+
+
+def compare_functions(before: dict[str, Unit], after: dict[str, Unit],
+                      after_clauses=None) -> tuple[list[Finding], str]:
     """Потеря функции — функция из «до» без достаточно близкой пары в «после».
 
     Возвращает выводы и фактический режим сопоставления (embeddings / lexical),
     чтобы в отчёте было видно, на чём именно посчитано.
     """
     b_texts, b_meta = _flatten(before)
-    a_texts, a_meta = _flatten(after)
+    if after_clauses:
+        a_texts, a_meta = _after_pool(after, after_clauses)
+    else:
+        a_texts, a_meta = _flatten(after)
     if not b_texts or not a_texts:
         return [], "lexical"
 
@@ -124,12 +149,22 @@ def compare_functions(before: dict[str, Unit], after: dict[str, Unit]) -> tuple[
         a_code, a_fn = a_meta[j]
 
         if score >= th["match"]:
-            if a_code != b_code:                       # функция ушла в другое подразделение
+            if a_code and a_code != b_code:            # функция ушла в другое подразделение
                 findings.append(Finding(
                     kind="function_moved", severity="medium",
                     title=f"Функция перешла из {b_code} в {a_code}",
                     detail=f"«{b_fn.text[:150]}» — в новой редакции закреплена за {a_code}. "
                            f"Проверить, что передача зафиксирована распорядительным документом.",
+                    confidence=round(score, 2),
+                    sources=[Source("до", b_fn.cite, b_fn.text),
+                             Source("после", a_fn.cite, a_fn.text)]))
+            elif not a_code:                           # переехала в общий раздел документа
+                findings.append(Finding(
+                    kind="function_generalized", severity="info",
+                    title=f"Функция {b_code} перенесена в общий раздел",
+                    detail=f"В новой редакции формулировка закреплена не за подразделением, "
+                           f"а в общем пункте {a_fn.cite}. Ответственность стала общей — "
+                           f"проверить, что это соответствует замыслу реорганизации.",
                     confidence=round(score, 2),
                     sources=[Source("до", b_fn.cite, b_fn.text),
                              Source("после", a_fn.cite, a_fn.text)]))
@@ -270,7 +305,7 @@ def run(before_path: str, after_path: str, verify: bool = True) -> Report:
     after, after_clauses = build(after_path)
 
     findings = compare_units(before, after)
-    fn_findings, mode = compare_functions(before, after)
+    fn_findings, mode = compare_functions(before, after, after_clauses)
     findings += fn_findings
     findings += find_duplication(after)
     findings += find_conflicts(after)

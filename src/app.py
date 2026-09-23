@@ -27,6 +27,7 @@ KIND_RU = {
     "duplication": "Дублирование",
     "conflict_of_interest": "Конфликт интересов",
     "false_positive": "Снято агентом",
+    "function_generalized": "Функция стала общей",
 }
 SEV_RU = {"high": "высокий", "medium": "средний", "info": "справочно"}
 
@@ -142,7 +143,7 @@ function render(){
   const L=data.labels, before=data.units_before.map(u=>u.code);
   const units=data.units_after.map(u=>
     `<span class="u ${before.includes(u.code)?'':'new'}">${u.code} · функций ${u.functions.length}</span>`).join('');
-  const kinds=['all','function_lost','false_positive','duplication','function_moved','unit_created'];
+  const kinds=['all','function_lost','false_positive','duplication','function_moved','function_generalized','unit_created'];
   const tabs=kinds.map(k=>`<button class="tab ${filter===k?'on':''}" data-k="${k}">${
     k==='all'?'Все выводы ('+data.findings.length+')':(L.kind[k]||k)+' ('+count(k)+')'}</button>`).join('');
 
