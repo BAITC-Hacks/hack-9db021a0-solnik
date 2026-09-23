@@ -8,6 +8,7 @@
 
 BASE_CSS = """
 :root{
+  color-scheme:light;
   --bg:#ffffff; --surface:#fafafa; --card:#ffffff;
   --ink:#09090b; --mut:#71717a; --mut2:#a1a1aa;
   --line:#e8e8ec; --line2:#d4d4d8; --muted:#f4f4f5;
@@ -19,14 +20,6 @@ BASE_CSS = """
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --r:10px;
 }
-@media(prefers-color-scheme:dark){:root{
-  --bg:#09090b; --surface:#0c0c0e; --card:#121214;
-  --ink:#fafafa; --mut:#a1a1aa; --mut2:#71717a;
-  --line:#232327; --line2:#2e2e34; --muted:#18181b;
-  --acc:#fafafa; --link:#60a5fa;
-  --ok:#4ade80; --ok-bg:#0c2417; --warn:#facc15; --warn-bg:#27220a;
-  --bad:#f87171; --bad-bg:#2a1010;
-}}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;
@@ -57,7 +50,7 @@ input[type=file]::file-selector-button:hover{background:var(--muted)}
 LANDING = """
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Сверка — анализ организационной структуры и функционала</title>
+<title>OrgTrace — трассировка функций при реорганизации</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap">
@@ -160,7 +153,7 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
 
 <nav><div class="container">
   <div class="brandrow">
-    <div class="brand">Сверка</div>
+    <div class="brand">Org<span style="color:var(--mut)">Trace</span></div>
     <div class="navlinks">
       <a href="#problem">Задача</a>
       <a href="#how">Как работает</a>
@@ -250,7 +243,7 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
 </div></div>
 
 <footer><div class="container">
-  <span>Сверка · анализ организационной структуры и функционала</span>
+  <span>OrgTrace · трассировка функций при реорганизации</span>
   <span>HackAlem AI 2026 · команда Solnik</span>
 </div></footer>
 </body></html>

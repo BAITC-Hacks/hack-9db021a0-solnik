@@ -56,7 +56,7 @@ def build_docx(report: Report, conclusion: str) -> bytes:
     meta = doc.add_paragraph()
     meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
     m = meta.add_run(f"Комплект «до»: {report.before_doc}    Комплект «после»: {report.after_doc}\n"
-                     f"Дата анализа: {date.today().strftime('%d.%m.%Y')}")
+                     f"Дата анализа: {date.today().strftime('%d.%m.%Y')}    Сформировано: OrgTrace")
     m.font.size = Pt(9)
     m.font.color.rgb = RGBColor(0x64, 0x74, 0x8B)
 

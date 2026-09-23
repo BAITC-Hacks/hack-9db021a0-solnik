@@ -15,7 +15,7 @@ import json
 import os
 from dataclasses import dataclass, field, asdict
 
-from .config import load_env  # noqa: F401
+from .config import openai_client
 from .align import Index
 from .docparse import Clause
 from .orgmap import Unit
@@ -131,16 +131,10 @@ SUBMIT_SCHEMA = {"type": "function", "function": {
 def verify_loss(function_text: str, unit_code: str, tools: DocumentTools,
                 max_steps: int = 4) -> Verification | None:
     """Один цикл агента: поиск по инструментам -> решение."""
-    key = os.getenv("OPENAI_API_KEY")
-    if not key:
+    client = openai_client()
+    if client is None:
         return None
-
-    try:
-        from openai import OpenAI
-        client = OpenAI(api_key=key)
-        model = os.getenv("OPENAI_MODEL", "gpt-5")
-    except Exception:
-        return None
+    model = os.getenv("OPENAI_MODEL", "gpt-5")
 
     messages = [
         {"role": "system", "content": SYSTEM},

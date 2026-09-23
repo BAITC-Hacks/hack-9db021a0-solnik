@@ -133,6 +133,14 @@ _SCRIPT = """
 const $=s=>document.querySelector(s);
 let data=null, filter='all', query='';
 
+// Весь текст из документов и ответов модели выводится только через esc():
+// загруженный файл может содержать разметку, и без экранирования она
+// выполнилась бы в браузере.
+const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function esc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, c=>ESC[c]);
+}
+
 const NAV=[
   {k:'all', i:'summary', t:'Сводка'},
   {g:'Отклонения'},
@@ -147,6 +155,18 @@ const NAV=[
   {k:'units',  i:'units',  t:'Подразделения'},
   {k:'report', i:'report', t:'Заключение'}
 ];
+
+const HINT={
+  all:'Сводка появится после анализа.',
+  function_lost:'Здесь будут функции, которым не нашлось соответствия в комплекте «после».',
+  false_positive:'Здесь будут подозрения, которые агент проверил и снял, указав пункт.',
+  duplication:'Здесь будут функции, записанные сразу двум подразделениям.',
+  conflict_of_interest:'Здесь будут подразделения, совмещающие несовместимые роли.',
+  function_moved:'Здесь будут функции, перешедшие в другое подразделение.',
+  function_generalized:'Здесь будут функции, переставшие быть закреплёнными за подразделением.',
+  units:'Здесь будет состав подразделений с их функциями.',
+  report:'Здесь будет итоговое аналитическое заключение.'
+};
 
 function match(f,q){
   q=q.toLowerCase();
@@ -169,65 +189,68 @@ function renderNav(){
   });
 }
 
+function showMessage(text){
+  $('#out').innerHTML='<div class="empty">'+esc(text)+'</div>';
+}
+
 async function analyze(useSample){
   const fd=new FormData();
   if(!useSample){
-    if($('#before').files[0]) fd.append('before',$('#before').files[0]);
-    if($('#after').files[0]) fd.append('after',$('#after').files[0]);
+    if(!$('#before').files[0]||!$('#after').files[0]){
+      showMessage('Выберите оба файла — комплект «до» и комплект «после», или запустите контрольный комплект.');
+      return;
+    }
+    fd.append('before',$('#before').files[0]);
+    fd.append('after',$('#after').files[0]);
   }
-  $('#out').innerHTML='<div class="empty">Разбираю документы и перепроверяю выводы агентом — обычно около 45 секунд.</div>';
+  showMessage('Разбираю документы и перепроверяю выводы агентом — обычно до минуты.');
   $('#go').disabled=$('#demo').disabled=true;
   try{
     const r=await fetch('/api/analyze',{method:'POST',body:fd});
     const res=await r.json();
-    if(res.error){
-      $('#out').innerHTML='<div class="empty">'+res.error+'</div>';
-      $('#go').disabled=$('#demo').disabled=false; return;
-    }
+    if(res.error){ showMessage(res.error); return; }
     data=res; filter='all'; query='';
-    $('#dl').style.display='inline-flex';
+    const dl=$('#dl');
+    dl.href='/api/export?id='+encodeURIComponent(data.report_id);
+    dl.style.display='inline-flex';
     render();
   }catch(e){
-    $('#out').innerHTML='<div class="empty">Ошибка: '+e.message+'</div>';
+    showMessage('Не удалось связаться с сервером: '+e.message);
+  }finally{
+    $('#go').disabled=$('#demo').disabled=false;
   }
-  $('#go').disabled=$('#demo').disabled=false;
 }
 
 function card(f,L){
   let v='';
   if(f.verification){
+    const V=f.verification;
     let tr='';
-    if(f.verification.trace.length){
-      tr='<details><summary>показать работу агента ('+f.verification.trace.length+' вызова инструментов)</summary>'+
-        f.verification.trace.map((t,i)=>'<div class="tc"><b>'+(i+1)+'. '+t.tool+'</b>('+
-        JSON.stringify(t.args).slice(0,130)+') → '+String(t.result).slice(0,200)+'…</div>').join('')+'</details>';
+    if(V.trace.length){
+      tr='<details><summary>показать работу агента ('+V.trace.length+' вызова инструментов)</summary>'+
+        V.trace.map((t,i)=>'<div class="tc"><b>'+(i+1)+'. '+esc(t.tool)+'</b>('+
+        esc(JSON.stringify(t.args).slice(0,130))+') → '+esc(String(t.result).slice(0,200))+'…</div>').join('')+
+        '</details>';
     }
-    v='<div class="vf '+f.verification.verdict+'">Агент-верификатор: '+f.verification.verdict_ru+
-      (f.verification.evidence_cite?' · '+f.verification.evidence_cite:'')+tr+'</div>';
+    v='<div class="vf '+esc(V.verdict)+'">Агент-верификатор: '+esc(V.verdict_ru)+
+      (V.evidence_cite?' · '+esc(V.evidence_cite):'')+tr+'</div>';
   }
-  const rec=f.recommendation?'<div class="rec"><b>Рекомендация.</b> '+f.recommendation+'</div>':'';
-  const src=f.sources.map(s=>'<div class="src"><b>'+s.cite+'</b> — '+s.quote.slice(0,260)+'</div>').join('');
-  return '<div class="f '+f.severity+'"><div class="meta">'+(L.kind[f.kind]||f.kind)+
-    ' · риск '+L.severity[f.severity]+' · уверенность '+f.confidence+'</div><h3>'+f.title+
-    '</h3><p>'+f.detail+'</p>'+v+rec+src+'</div>';
+  const rec=f.recommendation?'<div class="rec"><b>Рекомендация.</b> '+esc(f.recommendation)+'</div>':'';
+  const src=f.sources.map(s=>'<div class="src"><b>'+esc(s.cite)+'</b> — '+esc(s.quote.slice(0,260))+'</div>').join('');
+  return '<div class="f '+esc(f.severity)+'"><div class="meta">'+esc(L.kind[f.kind]||f.kind)+
+    ' · риск '+esc(L.severity[f.severity])+' · уверенность '+esc(f.confidence)+'</div><h3>'+esc(f.title)+
+    '</h3><p>'+esc(f.detail)+'</p>'+v+rec+src+'</div>';
 }
 
-const HINT={
-  all:'Сводка появится после анализа.',
-  function_lost:'Здесь будут функции, которым не нашлось соответствия в комплекте «после».',
-  false_positive:'Здесь будут подозрения, которые агент проверил и снял, указав пункт.',
-  duplication:'Здесь будут функции, записанные сразу двум подразделениям.',
-  conflict_of_interest:'Здесь будут подразделения, совмещающие несовместимые роли.',
-  function_moved:'Здесь будут функции, перешедшие в другое подразделение.',
-  function_generalized:'Здесь будут функции, переставшие быть закреплёнными за подразделением.',
-  units:'Здесь будет состав подразделений с их функциями.',
-  report:'Здесь будет итоговое аналитическое заключение.'
-};
+function conclusionPanel(){
+  return '<div class="panel"><pre class="conc">'+esc(data.conclusion)+'</pre>'+
+    '<p class="mode">Режим сопоставления: '+esc(data.mode)+' · '+esc(data.before_doc)+' → '+esc(data.after_doc)+'</p></div>';
+}
 
 function render(){
   renderNav();
   if(!data){
-    $('#out').innerHTML='<div class="empty">'+(HINT[filter]||'')+
+    $('#out').innerHTML='<div class="empty">'+esc(HINT[filter]||'')+
       '<br><br>Нажмите «Контрольный комплект» выше, чтобы запустить разбор на документах из кейса.</div>';
     return;
   }
@@ -243,25 +266,23 @@ function render(){
       '<div class="stat"><span>Снято агентом</span><b>'+count('false_positive')+'</b></div>'+
       '<div class="stat"><span>Стало общим</span><b>'+count('function_generalized')+'</b></div></div>'+
       '<div class="units">'+data.units_after.map(u=>'<span class="u '+(before.includes(u.code)?'':'new')+'">'+
-        u.code+' · функций '+u.functions.length+'</span>').join('')+'</div>'+
-      '<div class="panel"><pre class="conc">'+data.conclusion+'</pre>'+
-      '<p class="mode">Режим сопоставления: '+data.mode+' · '+data.before_doc+' → '+data.after_doc+'</p></div>'+
+        esc(u.code)+' · функций '+u.functions.length+'</span>').join('')+'</div>'+
+      conclusionPanel()+
       data.findings.slice(0,8).map(f=>card(f,L)).join('');
   } else if(filter==='units'){
     body=data.units_after.map(u=>'<div class="f info"><div class="meta">'+
-      (before.includes(u.code)?'сохранено':'создано')+' · '+u.cite+'</div><h3>'+u.code+' — '+u.name+
+      (before.includes(u.code)?'сохранено':'создано')+' · '+esc(u.cite)+'</div><h3>'+esc(u.code)+' — '+esc(u.name)+
       '</h3><p>Закреплённых функций: '+u.functions.length+'</p>'+
-      u.functions.slice(0,6).map(fn=>'<div class="src"><b>'+fn.cite+'</b> — '+
-        fn.text.slice(0,200)+'</div>').join('')+'</div>').join('');
+      u.functions.slice(0,6).map(fn=>'<div class="src"><b>'+esc(fn.cite)+'</b> — '+
+        esc(fn.text.slice(0,200))+'</div>').join('')+'</div>').join('');
   } else if(filter==='report'){
-    body='<div class="panel"><pre class="conc">'+data.conclusion+'</pre>'+
-      '<p class="mode">Режим сопоставления: '+data.mode+' · '+data.before_doc+' → '+data.after_doc+'</p></div>';
+    body=conclusionPanel();
   } else {
     let list=data.findings.filter(f=>f.kind===filter);
     const total=list.length;
     if(query) list=list.filter(f=>match(f,query));
     body='<input class="search" id="q" placeholder="Поиск по тексту вывода или номеру пункта" value="'+
-      query.replace(/"/g,'&quot;')+'">'+
+      esc(query)+'">'+
       (query?'<p class="found">Найдено '+list.length+' из '+total+'</p>':'')+
       (list.length ? list.map(f=>card(f,L)).join('')
                    : '<div class="empty">Ничего не найдено.</div>');
@@ -284,7 +305,7 @@ renderNav();
 
 APP = """<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Сверка — рабочий экран</title>
+<title>OrgTrace — рабочий экран</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap">
@@ -293,7 +314,7 @@ APP = """<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <div class="scrim" id="scrim"></div>
 
 <aside class="side">
-  <div class="top">Сверка <em>v1</em></div>
+  <div class="top">Org<span style="color:var(--mut);margin-left:-10px">Trace</span> <em>v1</em></div>
   <nav id="nav"></nav>
   <div class="bottom"><a class="it" href="/">%(home)s<span class="lbl">На главную</span></a></div>
 </aside>
@@ -303,7 +324,7 @@ APP = """<!doctype html><html lang="ru"><head><meta charset="utf-8">
     <button class="burger" id="burger">%(menu)s</button>
     <h1>Анализ организационной структуры и функционала</h1>
     <div class="sp"></div>
-    <a class="btn outline sm" id="dl" href="/api/export" style="display:none">%(download)s Скачать заключение</a>
+    <a class="btn outline sm" id="dl" href="#" style="display:none">%(download)s Скачать заключение</a>
   </div>
 
   <div class="wrap">

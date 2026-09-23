@@ -147,10 +147,15 @@ def compare_functions(before: dict[str, Unit], after: dict[str, Unit],
     # Пункт с тем же адресом и тем же текстом в комплекте «после» означает,
     # что формулировка не менялась. Нужно, чтобы сравнение документа с самим
     # собой не выдавало мнимых передач функций.
-    unchanged = {(c.cite, c.text) for _, c in a_meta}
+    # Текст функции хранится без замыкающей «;», текст пункта — как в документе,
+    # поэтому сравниваем в нормализованном виде.
+    def _norm(t: str) -> str:
+        return t.strip(" ;.")
+
+    unchanged = {(c.cite, _norm(c.text)) for _, c in a_meta}
 
     for i, (b_code, b_fn) in enumerate(b_meta):
-        if (b_fn.cite, b_fn.text) in unchanged:
+        if (b_fn.cite, _norm(b_fn.text)) in unchanged:
             continue
         j, score = sim.best_for_left(i)
         if j < 0:
@@ -358,7 +363,8 @@ def run(before_path: str, after_path: str, verify: bool = True,
 
     if verify:
         findings = verify_findings(findings, after_clauses, after)
-        findings = attach_recommendations(findings)
+        findings = attach_recommendations(
+            findings, {code: u.name for code, u in after.items()})
 
     order = {"high": 0, "medium": 1, "info": 2}
     findings.sort(key=lambda f: (order[f.severity], -f.confidence))

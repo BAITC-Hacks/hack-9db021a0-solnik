@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 import os
 
-from .config import load_env  # noqa: F401  загрузка .env
+from .config import openai_client
 import re
 from collections import Counter
 
@@ -60,12 +60,10 @@ def _idf(corpus: list[str]) -> dict[str, float]:
 
 
 def _embed(texts: list[str]) -> list[list[float]] | None:
-    key = os.getenv("OPENAI_API_KEY")
-    if not key or not texts:
+    client = openai_client()
+    if client is None or not texts:
         return None
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=key)
         model = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
         out: list[list[float]] = []
         for i in range(0, len(texts), 128):          # батчами, чтобы не упереться в лимит

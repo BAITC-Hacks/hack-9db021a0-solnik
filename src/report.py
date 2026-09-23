@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 
-from .config import load_env  # noqa: F401  загрузка .env
+from .config import openai_client
 
 from .compare import Report
 
@@ -51,13 +51,11 @@ TEMPLATE_TAIL = (
 
 def render_conclusion(report: Report) -> str:
     facts = _facts(report)
-    key = os.getenv("OPENAI_API_KEY")
-    if not key:
+    client = openai_client()
+    if client is None:
         return facts + TEMPLATE_TAIL
 
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=key)
         model = os.getenv("OPENAI_MODEL", "gpt-5")
         resp = client.chat.completions.create(
             model=model,

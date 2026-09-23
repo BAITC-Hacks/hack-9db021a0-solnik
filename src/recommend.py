@@ -14,7 +14,7 @@ import json
 import os
 
 from .align import tokens
-from .config import load_env  # noqa: F401
+from .config import openai_client
 
 SYSTEM = """Ты помогаешь распределить функции между подразделениями после реорганизации.
 
@@ -53,13 +53,11 @@ def recommend(pairs: list[dict], limit: int = 10) -> dict[int, dict]:
     pairs = pairs[:limit]
     result = {p["id"]: _fallback(p) for p in pairs}
 
-    key = os.getenv("OPENAI_API_KEY")
-    if not key:
+    client = openai_client()
+    if client is None:
         return result
 
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=key)
         model = os.getenv("OPENAI_MODEL", "gpt-5")
         payload = [{"id": p["id"],
                     "подразделение_A": f'{p["code_a"]} — {p["name_a"]}',
@@ -88,8 +86,13 @@ def recommend(pairs: list[dict], limit: int = 10) -> dict[int, dict]:
     return result
 
 
-def attach(findings: list) -> list:
-    """Добавляет рекомендацию каждому выводу о дублировании."""
+def attach(findings: list, unit_names: dict[str, str] | None = None) -> list:
+    """Добавляет рекомендацию каждому выводу о дублировании.
+
+    unit_names — код подразделения -> полное наименование. Без него модель
+    видит только коды и не может судить о профиле подразделения.
+    """
+    names = unit_names or {}
     dups = [f for f in findings if f.kind == "duplication" and len(f.sources) >= 2]
     if not dups:
         return findings
@@ -97,8 +100,9 @@ def attach(findings: list) -> list:
     pairs = []
     for i, f in enumerate(dups):
         a, b = f.sources[0], f.sources[1]
-        pairs.append({"id": i, "code_a": a.label, "name_a": a.label,
-                      "code_b": b.label, "name_b": b.label, "function": a.quote})
+        pairs.append({"id": i, "code_a": a.label, "name_a": names.get(a.label, a.label),
+                      "code_b": b.label, "name_b": names.get(b.label, b.label),
+                      "function": a.quote})
 
     recs = recommend(pairs)
     for i, f in enumerate(dups):
