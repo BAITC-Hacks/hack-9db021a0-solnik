@@ -27,9 +27,9 @@ CODE_RE = re.compile(r"\b([А-ЯЁ]{2,10})\b")
 _KZ_UP = "ӘҒҚҢӨҰҮҺІ"
 _KZ_LOW = "әғқңөұүһі"
 UNIT_IN_PARENS = re.compile(rf"([А-ЯЁA-Z{_KZ_UP}][^()]{{8,120}}?)\s*\(([А-ЯЁA-Z{_KZ_UP}]{{2,10}})\)")
-LIST_ITEM = re.compile(rf"(?<![A-Za-zА-Яа-я])[а-я{_KZ_LOW}a-z]\.\s*")
+LIST_ITEM = re.compile(rf"[а-я{_KZ_LOW}]\.\s*")
 CODE_RE = re.compile(rf"\b([А-ЯЁ{_KZ_UP}]{{2,10}})\b")
-DIRECTOR_RE = re.compile(r"директор|director", re.I)   # рус., каз., англ.
+DIRECTOR_RE = re.compile(r"директор", re.I)
 
 
 @dataclass
