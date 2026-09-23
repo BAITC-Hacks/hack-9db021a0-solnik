@@ -1,4 +1,9 @@
-<p align="center"><img src="static/logo.png" alt="OrgTrace" width="380"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+    <img src="static/logo.png" alt="OrgTrace" width="380">
+  </picture>
+</p>
 
 # OrgTrace
 
