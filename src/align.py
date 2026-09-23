@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import math
 import os
+import threading
 
 from .config import openai_client
 import re
@@ -59,19 +60,33 @@ def _idf(corpus: list[str]) -> dict[str, float]:
     return {t: math.log((n + 1) / (c + 1)) + 1.0 for t, c in df.items()}
 
 
+# Одни и те же пункты встречаются в нескольких стадиях разбора (сопоставление,
+# поиск дублей, индекс агента). Кеш по тексту убирает повторные запросы.
+_EMBED_CACHE: dict[tuple[str, str], list[float]] = {}
+_EMBED_LOCK = threading.Lock()
+
+
 def _embed(texts: list[str]) -> list[list[float]] | None:
     client = openai_client()
     if client is None or not texts:
         return None
+    model = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
+    # пустые строки API не принимает — заменяем пробелом
+    texts = [t if t.strip() else " " for t in texts]
+
+    with _EMBED_LOCK:
+        missing = list(dict.fromkeys(t for t in texts if (model, t) not in _EMBED_CACHE))
     try:
-        model = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
-        out: list[list[float]] = []
-        for i in range(0, len(texts), 128):          # батчами, чтобы не упереться в лимит
-            resp = client.embeddings.create(model=model, input=texts[i:i + 128])
-            out.extend(d.embedding for d in resp.data)
-        return out
+        for i in range(0, len(missing), 128):        # батчами, чтобы не упереться в лимит
+            batch = missing[i:i + 128]
+            resp = client.embeddings.create(model=model, input=batch)
+            with _EMBED_LOCK:
+                for text, d in zip(batch, resp.data):
+                    _EMBED_CACHE[(model, text)] = d.embedding
     except Exception:
-        return None                                   # молча уходим в резервный режим
+        return None                                   # уходим в резервный режим
+    with _EMBED_LOCK:
+        return [_EMBED_CACHE[(model, t)] for t in texts]
 
 
 def _cos_vec(a: list[float], b: list[float]) -> float:
@@ -116,11 +131,32 @@ class Similarity:
         return max(scores, key=lambda p: p[1])
 
 
-# Пороги подобраны на контрольном комплекте ред.8 / ред.9.
-THRESHOLDS = {
+# Пороги подобраны на контрольном комплекте ред.8 / ред.9 — единственном
+# размеченном наборе. На других документах их может понадобиться подстроить,
+# поэтому каждый порог переопределяется переменной окружения, например
+# ORGTRACE_EMBEDDINGS_MATCH=0.6. Ошибки порога на стороне потерь частично
+# гасит агент-верификатор: каждое подозрение на потерю он проверяет по документу.
+_DEFAULT_THRESHOLDS = {
     "embeddings": {"match": 0.62, "weak": 0.50, "duplicate": 0.72},
     "lexical": {"match": 0.45, "weak": 0.33, "duplicate": 0.55},
 }
+
+
+def _load_thresholds() -> dict[str, dict[str, float]]:
+    out: dict[str, dict[str, float]] = {}
+    for mode, values in _DEFAULT_THRESHOLDS.items():
+        out[mode] = {}
+        for name, default in values.items():
+            raw = os.getenv(f"ORGTRACE_{mode.upper()}_{name.upper()}")
+            try:
+                value = float(raw) if raw else default
+            except ValueError:
+                value = default
+            out[mode][name] = min(max(value, 0.0), 1.0)
+    return out
+
+
+THRESHOLDS = _load_thresholds()
 
 
 class Index:
