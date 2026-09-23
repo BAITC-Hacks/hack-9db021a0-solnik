@@ -134,7 +134,7 @@ SUBMIT_SCHEMA = {"type": "function", "function": {
 
 
 def verify_loss(function_text: str, unit_code: str, tools: DocumentTools,
-                max_steps: int = 4) -> Verification | None:
+                max_steps: int = 6) -> Verification | None:
     """Один цикл агента: поиск по инструментам -> решение."""
     client = openai_client()
     if client is None:
@@ -154,11 +154,16 @@ def verify_loss(function_text: str, unit_code: str, tools: DocumentTools,
     # текст, а на номер, подсказанный моделью или самим документом.
     seen: dict[str, str] = {}
 
-    for _ in range(max_steps):
+    for step in range(max_steps):
+        # На последнем шаге поиск закрыт: агент обязан вынести решение по тому,
+        # что уже нашёл, иначе проверка обрывалась без вердикта.
+        last = step == max_steps - 1
+        extra = ({"tool_choice": {"type": "function", "function": {"name": "submit_verdict"}}}
+                 if last else {})
         try:
             resp = client.chat.completions.create(
                 model=model, messages=messages,
-                tools=TOOL_SCHEMA + [SUBMIT_SCHEMA])
+                tools=TOOL_SCHEMA + [SUBMIT_SCHEMA], **extra)
         except Exception:
             return None
 

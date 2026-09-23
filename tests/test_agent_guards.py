@@ -99,3 +99,22 @@ def test_thresholds_can_be_overridden(monkeypatch):
     th = align._load_thresholds()
     assert th["embeddings"]["match"] == 0.7
     assert th["lexical"]["weak"] == 0.33          # некорректное значение не ломает разбор
+
+
+def test_last_step_forces_verdict(monkeypatch, tools):
+    """На последнем шаге агенту закрывают поиск и требуют вынести решение."""
+    calls_kwargs = []
+
+    class Recording(FakeClient):
+        def _create(self, **kw):
+            calls_kwargs.append(kw)
+            return super()._create(**kw)
+
+    script = [_msg([_call("search_clauses", {"query": "x"}, f"s{i}")]) for i in range(5)]
+    script.append(_msg([_call("submit_verdict", {"verdict": "uncertain", "reason": "мало данных"}, "v")]))
+    monkeypatch.setattr(agent, "openai_client", lambda: Recording(script))
+    v = verify_loss("функция", "ДНМ", tools, max_steps=6)
+
+    assert v.verdict == "uncertain"
+    assert "tool_choice" not in calls_kwargs[0]
+    assert calls_kwargs[-1]["tool_choice"]["function"]["name"] == "submit_verdict"
