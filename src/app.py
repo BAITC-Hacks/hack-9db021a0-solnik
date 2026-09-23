@@ -6,12 +6,14 @@ from __future__ import annotations
 
 import os
 import tempfile
+import traceback
 import zipfile
 
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from .compare import run
+from .export import build_docx
 from .app_page import APP as WORKSPACE_PAGE
 from .pages import LANDING
 from .report import render_conclusion
@@ -20,6 +22,10 @@ app = FastAPI(title="Анализ организационной структу�
 
 SAMPLE_BEFORE = "data/samples/polozhenie_red8.docx"
 SAMPLE_AFTER = "data/samples/polozhenie_red9.docx"
+
+# Разбор занимает около 45 секунд, поэтому выгрузка использует последний
+# результат, а не пересчитывает его заново.
+_LAST: dict = {}
 
 KIND_RU = {
     "unit_created": "Создано подразделение",
@@ -87,14 +93,33 @@ async def analyze(before: UploadFile = File(None), after: UploadFile = File(None
         report = run(before_path, after_path,
                      before_name=before_name, after_name=after_name)
     except Exception:
+        traceback.print_exc()
         return JSONResponse(
             {"error": "Не удалось разобрать документы. Проверьте, что это положения "
                       "с нумерацией пунктов, а не сканы или таблицы."}, status_code=400)
 
+    conclusion = render_conclusion(report)
+    _LAST["report"] = report
+    _LAST["conclusion"] = conclusion
+
     data = report.to_dict()
-    data["conclusion"] = render_conclusion(report)
+    data["conclusion"] = conclusion
     data["labels"] = {"kind": KIND_RU, "severity": SEV_RU}
     return JSONResponse(data)
+
+
+@app.get("/api/export")
+def export_docx():
+    """Выгрузка итогового заключения в Word по последнему разбору."""
+    report = _LAST.get("report")
+    if report is None:
+        return JSONResponse({"error": "Сначала выполните анализ."}, status_code=400)
+    blob = build_docx(report, _LAST.get("conclusion", ""))
+    name = "zakluchenie_" + report.after_doc.replace(".docx", "") + ".docx"
+    return Response(
+        content=blob,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 PAGE = """

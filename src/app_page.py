@@ -105,12 +105,18 @@ input[type=file]{font:inherit;font-size:13px;max-width:100%}
 pre.conc{white-space:pre-wrap;font:14px/1.62 var(--sans);margin:0}
 .mode{font-size:12px;color:var(--mut2);margin:12px 0 0}
 .empty{color:var(--mut);padding:28px;text-align:center}
+.search{width:100%;max-width:420px;font:inherit;font-size:13.5px;padding:9px 12px;margin-bottom:14px;
+  border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)}
+.search::placeholder{color:var(--mut2)}
+.found{font-size:12.5px;color:var(--mut2);margin:0 0 12px}
+.rec{margin:8px 0;padding:9px 12px;border-radius:8px;background:var(--acc-bg);color:var(--acc);
+  font-size:13px;border-left:3px solid currentColor}
 @media(max-width:700px){main{padding:20px 16px 60px}}
 """
 
 _SCRIPT = """
 const $=s=>document.querySelector(s);
-let data=null, filter='all';
+let data=null, filter='all', query='';
 
 const NAV=[
   {k:'all', i:'summary', t:'Сводка'},
@@ -125,6 +131,12 @@ const NAV=[
   {k:'units',  i:'units',  t:'Подразделения'},
   {k:'report', i:'report', t:'Заключение'}
 ];
+
+function match(f,q){
+  q=q.toLowerCase();
+  if((f.title+' '+f.detail).toLowerCase().includes(q)) return true;
+  return f.sources.some(s=>(s.cite+' '+s.quote).toLowerCase().includes(q));
+}
 
 function count(kind){ return data ? data.findings.filter(f=>f.kind===kind).length : ''; }
 
@@ -156,7 +168,9 @@ async function analyze(useSample){
       $('#out').innerHTML='<div class="panel empty">'+res.error+'</div>';
       $('#go').disabled=$('#demo').disabled=false; return;
     }
-    data=res; filter='all'; render();
+    data=res; filter='all'; query='';
+    document.getElementById('dl').style.display='inline-flex';
+    render();
   }catch(e){
     $('#out').innerHTML='<div class="panel empty">Ошибка: '+e.message+'</div>';
   }
@@ -175,10 +189,11 @@ function card(f,L){
     v='<div class="vf '+f.verification.verdict+'">Агент-верификатор: '+f.verification.verdict_ru+
       (f.verification.evidence_cite?' · '+f.verification.evidence_cite:'')+tr+'</div>';
   }
+  const rec=f.recommendation?'<div class="rec">Рекомендация: '+f.recommendation+'</div>':'';
   const src=f.sources.map(s=>'<div class="src"><b>'+s.cite+'</b> — '+s.quote.slice(0,260)+'</div>').join('');
   return '<div class="f '+f.severity+'"><div class="meta">'+(L.kind[f.kind]||f.kind)+
     ' · риск '+L.severity[f.severity]+' · уверенность '+f.confidence+'</div><h3>'+f.title+
-    '</h3><p>'+f.detail+'</p>'+v+src+'</div>';
+    '</h3><p>'+f.detail+'</p>'+v+rec+src+'</div>';
 }
 
 function render(){
@@ -210,11 +225,21 @@ function render(){
     body='<div class="panel"><pre class="conc">'+data.conclusion+'</pre>'+
       '<p class="mode">Режим сопоставления: '+data.mode+' · '+data.before_doc+' → '+data.after_doc+'</p></div>';
   } else {
-    const list=data.findings.filter(f=>f.kind===filter);
-    body=list.length ? list.map(f=>card(f,L)).join('')
-                     : '<div class="panel empty">В этой категории выводов нет.</div>';
+    let list=data.findings.filter(f=>f.kind===filter);
+    const total=list.length;
+    if(query) list=list.filter(f=>match(f,query));
+    body='<input class="search" id="q" placeholder="Поиск по тексту вывода или номеру пункта" value="'+
+      query.replace(/"/g,'&quot;')+'">'+
+      (query?'<p class="found">Найдено '+list.length+' из '+total+'</p>':'')+
+      (list.length ? list.map(f=>card(f,L)).join('')
+                   : '<div class="panel empty">Ничего не найдено.</div>');
   }
   $('#out').innerHTML=body;
+  const q=document.getElementById('q');
+  if(q){
+    q.oninput=()=>{ query=q.value; const pos=q.selectionStart; render();
+      const nq=document.getElementById('q'); if(nq){ nq.focus(); nq.setSelectionRange(pos,pos); } };
+  }
 }
 
 $('#go').onclick=()=>analyze(false);
@@ -254,6 +279,7 @@ APP = """<!doctype html><html lang="ru"><head><meta charset="utf-8">
       <div><label>Комплект «после»</label><input type="file" id="after" accept=".docx"></div>
       <button class="btn" id="go">Сравнить</button>
       <button class="btn outline" id="demo">Контрольный комплект</button>
+      <a class="btn outline" id="dl" href="/api/export" style="display:none">Скачать заключение</a>
     </div>
   </div>
 

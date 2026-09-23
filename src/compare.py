@@ -11,6 +11,7 @@ from dataclasses import dataclass, field, asdict
 
 from .agent import DocumentTools, verify_loss
 from .align import Similarity, THRESHOLDS
+from .recommend import attach as attach_recommendations
 from .orgmap import Unit, build
 
 
@@ -34,6 +35,7 @@ class Finding:
     confidence: float
     sources: list[Source] = field(default_factory=list)
     verification: dict | None = None   # решение агента-верификатора
+    recommendation: str | None = None  # предложение по устранению пересечения
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -142,7 +144,14 @@ def compare_functions(before: dict[str, Unit], after: dict[str, Unit],
     th = THRESHOLDS[sim.mode]
     findings: list[Finding] = []
 
+    # Пункт с тем же адресом и тем же текстом в комплекте «после» означает,
+    # что формулировка не менялась. Нужно, чтобы сравнение документа с самим
+    # собой не выдавало мнимых передач функций.
+    unchanged = {(c.cite, c.text) for _, c in a_meta}
+
     for i, (b_code, b_fn) in enumerate(b_meta):
+        if (b_fn.cite, b_fn.text) in unchanged:
+            continue
         j, score = sim.best_for_left(i)
         if j < 0:
             continue
@@ -225,33 +234,65 @@ def find_duplication(after: dict[str, Unit]) -> list[Finding]:
     return findings
 
 
-# Признаки несовместимых ролей у одного подразделения: (метка, ключевые слова)
-CONFLICT_ROLES = [
-    ("выполнение проверок", ("провед", "проверк", "аудиторск", "задани")),
-    ("контроль качества своей работы", ("контрол", "качеств", "оценк", "программ")),
+# Роли, которые подразделение может выполнять, и признаки этих ролей в тексте.
+# Формулировки положений устойчивы, поэтому роль опознаётся по корню слова.
+ROLE_MARKERS = {
+    "проведение проверок": ("проводит проверк", "проводят проверк", "руководство курируемых",
+                            "плановых и внеплановых", "аудиторских задани", "выполнение плана работ"),
+    # Намеренно узкие формулировки: «контроль качества выполненных работ» —
+    # это не оценка качества самого аудита, и конфликтом не является.
+    "оценка качества аудита": ("качества деятельности внутреннего аудита",
+                               "качества работы внутреннего аудита",
+                               "контроля качества аудита",
+                               "программу оценки и повышения качества",
+                               "программы оценки и повышения качества",
+                               "мониторинг качества деятельности"),
+    "разработка методологии": ("разрабатывает методическ", "актуализирует внд",
+                               "разрабатывает и внедряет программу",
+                               "методологическое обеспечение"),
+    "распоряжение кадрами": ("поощрению и наложению взысканий", "профессионального уровня работников"),
+}
+
+# Пары ролей, совмещение которых в одном подразделении создаёт конфликт интересов.
+INCOMPATIBLE_ROLES = [
+    ("проведение проверок", "оценка качества аудита",
+     "подразделение одновременно проводит проверки и оценивает их качество — "
+     "оценка перестаёт быть независимой"),
+    ("разработка методологии", "оценка качества аудита",
+     "подразделение само разрабатывает методологию и само же проверяет её соблюдение — "
+     "контроль замыкается на разработчика"),
 ]
 
 
+def _roles_of(unit: Unit) -> dict[str, object]:
+    """Какие роли подразделение выполняет и каким пунктом это подтверждается."""
+    found: dict[str, object] = {}
+    for fn in unit.functions:
+        low = fn.text.lower()
+        for role, markers in ROLE_MARKERS.items():
+            if role in found:
+                continue
+            if any(m in low for m in markers):
+                found[role] = fn
+    return found
+
+
 def find_conflicts(after: dict[str, Unit]) -> list[Finding]:
-    """Конфликт интересов — одно подразделение и исполняет, и оценивает качество."""
+    """Конфликт интересов — совмещение несовместимых ролей в одном подразделении."""
     findings: list[Finding] = []
     for code, unit in after.items():
-        hits: dict[str, object] = {}
-        for role, keys in CONFLICT_ROLES:
-            for fn in unit.functions:
-                low = fn.text.lower()
-                if sum(k in low for k in keys) >= 2:
-                    hits.setdefault(role, fn)
-                    break
-        if len(hits) == len(CONFLICT_ROLES):
-            srcs = [Source(role, fn.cite, fn.text) for role, fn in hits.items()]
-            findings.append(Finding(
-                kind="conflict_of_interest", severity="high",
-                title=f"Потенциальный конфликт интересов в {code}",
-                detail=f"{unit.name} одновременно выполняет проверки и оценивает качество работы. "
-                       f"Совмещение исполнения и контроля требует разделения ролей.",
-                confidence=0.6,
-                sources=srcs))
+        roles = _roles_of(unit)
+        for role_a, role_b, reason in INCOMPATIBLE_ROLES:
+            if role_a in roles and role_b in roles:
+                fn_a, fn_b = roles[role_a], roles[role_b]
+                findings.append(Finding(
+                    kind="conflict_of_interest", severity="high",
+                    title=f"Потенциальный конфликт интересов в {code}",
+                    detail=f"{unit.name}: {reason}. Совмещаются роли «{role_a}» и «{role_b}». "
+                           f"Требуется разделение ролей или независимая оценка.",
+                    confidence=0.7,
+                    sources=[Source(role_a, fn_a.cite, fn_a.text),
+                             Source(role_b, fn_b.cite, fn_b.text)]))
     return findings
 
 
@@ -289,7 +330,8 @@ def verify_findings(findings: list[Finding], after_clauses, after_units,
             if v.verdict == "found_elsewhere":
                 f.kind = "false_positive"
                 f.severity = "info"
-                f.title = f.title.replace("Возможная потеря функции", "Снято агентом: функция сохранена")
+                f.title = f.title.replace("Возможная потеря функции",
+                                          "Снято агентом: функция сохранена")
                 f.detail = (f"Первичное сопоставление отметило возможную потерю, но агент нашёл "
                             f"функцию в комплекте «после»: {v.evidence_cite}. {v.reason}")
                 if v.evidence_cite:
@@ -316,6 +358,7 @@ def run(before_path: str, after_path: str, verify: bool = True,
 
     if verify:
         findings = verify_findings(findings, after_clauses, after)
+        findings = attach_recommendations(findings)
 
     order = {"high": 0, "medium": 1, "info": 2}
     findings.sort(key=lambda f: (order[f.severity], -f.confidence))

@@ -70,3 +70,32 @@ def test_duplication_never_compares_clause_with_itself(report):
 def test_confidence_within_bounds(report):
     for f in report.findings:
         assert 0.0 <= f.confidence <= 1.0
+
+
+def test_conflict_of_interest_found(report):
+    """Контрольный случай: ДККМ разрабатывает методологию и сам оценивает качество."""
+    conflicts = report.by_kind("conflict_of_interest")
+    assert conflicts, "конфликт интересов не обнаружен"
+    assert any("ДККМ" in f.title for f in conflicts)
+    for f in conflicts:
+        assert len(f.sources) == 2, "конфликт должен подтверждаться двумя пунктами"
+
+
+def test_same_document_yields_no_changes():
+    """Документ, сравненный сам с собой, не должен давать потерь и передач."""
+    r = run(AFTER, AFTER, verify=False)
+    assert not r.by_kind("function_lost")
+    assert not r.by_kind("function_moved")
+    assert not r.by_kind("unit_created")
+
+
+def test_export_produces_valid_docx(report):
+    import io
+    from docx import Document
+    from src.export import build_docx
+
+    blob = build_docx(report, "Тестовое заключение.")
+    assert blob[:2] == b"PK", "на выходе должен быть файл Word"
+    doc = Document(io.BytesIO(blob))
+    assert len(doc.tables) == 2, "таблицы структуры и отклонений"
+    assert "ЗАКЛЮЧЕНИЕ" in doc.paragraphs[0].text
