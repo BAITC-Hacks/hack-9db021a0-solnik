@@ -21,6 +21,16 @@ LIST_ITEM = re.compile(r"[а-я]\.\s*")
 DIRECTOR_RE = re.compile(r"Директор[ыуа]?\s+(?:департамента\s+)?(.*)", re.I)
 CODE_RE = re.compile(r"\b([А-ЯЁ]{2,10})\b")
 
+# Документы бывают на казахском и смешанные: добавляем казахские буквы.
+# В казахском порядок слов обратный — «ОАД директоры:», а не «Директор ОАД:»,
+# поэтому руководителя ищем по корню слова в любом месте заголовка пункта.
+_KZ_UP = "ӘҒҚҢӨҰҮҺІ"
+_KZ_LOW = "әғқңөұүһі"
+UNIT_IN_PARENS = re.compile(rf"([А-ЯЁA-Z{_KZ_UP}][^()]{{8,120}}?)\s*\(([А-ЯЁA-Z{_KZ_UP}]{{2,10}})\)")
+LIST_ITEM = re.compile(rf"[а-я{_KZ_LOW}]\.\s*")
+CODE_RE = re.compile(rf"\b([А-ЯЁ{_KZ_UP}]{{2,10}})\b")
+DIRECTOR_RE = re.compile(r"директор", re.I)
+
 
 @dataclass
 class Function:
@@ -65,7 +75,7 @@ def extract_units(clauses: list[Clause], composition_clause: str = "3.4") -> dic
 
 
 def _norm(s: str) -> str:
-    return re.sub(r"[^а-яёa-z ]", " ", s.lower())
+    return re.sub(rf"[^а-яёa-z{_KZ_LOW} ]", " ", s.lower())
 
 
 def _owner_codes(text: str, units: dict[str, "Unit"]) -> list[str]:
