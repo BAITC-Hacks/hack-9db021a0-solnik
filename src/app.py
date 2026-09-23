@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import zipfile
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -34,11 +35,27 @@ KIND_RU = {
 SEV_RU = {"high": "высокий", "medium": "средний", "info": "справочно"}
 
 
+class DocumentError(Exception):
+    """Понятная пользователю причина, по которой документ не принят."""
+
+
 def _save(upload: UploadFile) -> str:
-    suffix = os.path.splitext(upload.filename or "doc.docx")[1] or ".docx"
-    fd, path = tempfile.mkstemp(suffix=suffix)
+    name = upload.filename or "doc.docx"
+    if not name.lower().endswith(".docx"):
+        raise DocumentError(f"Файл «{name}» не в формате .docx. "
+                            f"Сейчас поддерживается Word (.docx).")
+    data = upload.file.read()
+    if not data:
+        raise DocumentError(f"Файл «{name}» пустой.")
+
+    fd, path = tempfile.mkstemp(suffix=".docx")
     with os.fdopen(fd, "wb") as f:
-        f.write(upload.file.read())
+        f.write(data)
+    if not zipfile.is_zipfile(path):
+        raise DocumentError(f"Файл «{name}» повреждён или не является документом Word.")
+    with zipfile.ZipFile(path) as z:
+        if "word/document.xml" not in z.namelist():
+            raise DocumentError(f"В файле «{name}» нет текста документа Word.")
     return path
 
 
@@ -56,9 +73,24 @@ def workspace() -> str:
 
 @app.post("/api/analyze")
 async def analyze(before: UploadFile = File(None), after: UploadFile = File(None)):
-    before_path = _save(before) if before else SAMPLE_BEFORE
-    after_path = _save(after) if after else SAMPLE_AFTER
-    report = run(before_path, after_path)
+    try:
+        before_path = _save(before) if before else SAMPLE_BEFORE
+        after_path = _save(after) if after else SAMPLE_AFTER
+    except DocumentError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+    # имя для ссылок берём исходное, а не путь во временной папке
+    before_name = before.filename if before else os.path.basename(SAMPLE_BEFORE)
+    after_name = after.filename if after else os.path.basename(SAMPLE_AFTER)
+
+    try:
+        report = run(before_path, after_path,
+                     before_name=before_name, after_name=after_name)
+    except Exception:
+        return JSONResponse(
+            {"error": "Не удалось разобрать документы. Проверьте, что это положения "
+                      "с нумерацией пунктов, а не сканы или таблицы."}, status_code=400)
+
     data = report.to_dict()
     data["conclusion"] = render_conclusion(report)
     data["labels"] = {"kind": KIND_RU, "severity": SEV_RU}

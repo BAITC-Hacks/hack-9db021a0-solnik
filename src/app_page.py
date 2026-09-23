@@ -58,8 +58,8 @@ body{display:flex;min-height:100vh}
   cursor:pointer;color:var(--mut);background:none;border:0;font:inherit;font-size:13.5px;
   width:100%;text-align:left;transition:background .12s,color .12s}
 .it svg{width:17px;height:17px;flex-shrink:0}
-.it:hover{background:var(--bg);color:var(--ink)}
-.it.on{background:var(--bg);color:var(--acc);font-weight:500}
+.it:hover{background:var(--muted);color:var(--ink)}
+.it.on{background:var(--muted);color:var(--acc);font-weight:500}
 .lbl{white-space:nowrap;opacity:0;transition:opacity .16s ease;flex:1;display:flex;
   align-items:center;justify-content:space-between;gap:8px}
 .side:hover .lbl,.side:focus-within .lbl{opacity:1}
@@ -71,7 +71,7 @@ main{flex:1;margin-left:53px;padding:26px 30px 70px;max-width:1120px}
 h1{font-size:23px;margin:0 0 4px;letter-spacing:-.02em}
 .head p{margin:0;color:var(--mut);font-size:13.5px;max-width:64ch}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-  padding:16px 18px;margin-bottom:16px}
+  padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(2,8,23,.04)}
 .row{display:flex;gap:14px;flex-wrap:wrap;align-items:end}
 label{display:block;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
   color:var(--mut2);margin-bottom:6px}
@@ -86,7 +86,7 @@ input[type=file]{font:inherit;font-size:13px;max-width:100%}
 .u{border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;background:var(--card)}
 .u.new{border-color:var(--ok);background:var(--ok-bg);color:var(--ok);font-weight:500}
 .f{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line2);
-  border-radius:10px;padding:14px 17px;margin-bottom:9px}
+  border-radius:10px;padding:14px 17px;margin-bottom:9px;box-shadow:0 1px 2px rgba(2,8,23,.04)}
 .f.high{border-left-color:var(--bad)}
 .f.medium{border-left-color:var(--warn)}
 .f.info{border-left-color:var(--ok)}
@@ -151,7 +151,12 @@ async function analyze(useSample){
   $('#go').disabled=$('#demo').disabled=true;
   try{
     const r=await fetch('/api/analyze',{method:'POST',body:fd});
-    data=await r.json(); filter='all'; render();
+    const res=await r.json();
+    if(res.error){
+      $('#out').innerHTML='<div class="panel empty">'+res.error+'</div>';
+      $('#go').disabled=$('#demo').disabled=false; return;
+    }
+    data=res; filter='all'; render();
   }catch(e){
     $('#out').innerHTML='<div class="panel empty">Ошибка: '+e.message+'</div>';
   }

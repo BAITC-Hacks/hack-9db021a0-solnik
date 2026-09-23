@@ -149,6 +149,9 @@ def compare_functions(before: dict[str, Unit], after: dict[str, Unit],
         a_code, a_fn = a_meta[j]
 
         if score >= th["match"]:
+            # тот же самый пункт того же документа — изменения нет
+            if a_fn.cite == b_fn.cite:
+                continue
             if a_code and a_code != b_code:            # функция ушла в другое подразделение
                 findings.append(Finding(
                     kind="function_moved", severity="medium",
@@ -300,9 +303,10 @@ def verify_findings(findings: list[Finding], after_clauses, after_units,
     return findings
 
 
-def run(before_path: str, after_path: str, verify: bool = True) -> Report:
-    before, before_clauses = build(before_path)
-    after, after_clauses = build(after_path)
+def run(before_path: str, after_path: str, verify: bool = True,
+        before_name: str | None = None, after_name: str | None = None) -> Report:
+    before, before_clauses = build(before_path, before_name)
+    after, after_clauses = build(after_path, after_name)
 
     findings = compare_units(before, after)
     fn_findings, mode = compare_functions(before, after, after_clauses)
@@ -317,8 +321,8 @@ def run(before_path: str, after_path: str, verify: bool = True) -> Report:
     findings.sort(key=lambda f: (order[f.severity], -f.confidence))
 
     return Report(
-        before_doc=before_path.split("/")[-1],
-        after_doc=after_path.split("/")[-1],
+        before_doc=before_name or before_path.split("/")[-1],
+        after_doc=after_name or after_path.split("/")[-1],
         mode=mode,
         units_before=[u.to_dict() for u in before.values()],
         units_after=[u.to_dict() for u in after.values()],

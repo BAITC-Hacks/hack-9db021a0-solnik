@@ -8,19 +8,22 @@
 
 BASE_CSS = """
 :root{
-  --bg:#f7f8f8; --card:#fff; --ink:#0b1416; --mut:#6b7d7f; --mut2:#93a3a4;
-  --line:#e3e8e8; --line2:#d3dbdb; --acc:#0b6f80; --acc-ink:#fff;
-  --ok:#2e6b45; --ok-bg:#e7f1ea; --warn:#8a6510; --warn-bg:#f6eed9;
-  --bad:#9b3520; --bad-bg:#f8e6e0;
+  /* нейтральная шкала shadcn: slate + чёрная основная кнопка + синий акцент */
+  --bg:#ffffff; --card:#ffffff; --ink:#020817; --mut:#64748b; --mut2:#94a3b8;
+  --line:#e2e8f0; --line2:#cbd5e1; --muted:#f1f5f9;
+  --acc:#2563eb; --acc-bg:#eff6ff; --acc-ink:#ffffff;
+  --ok:#059669; --ok-bg:#ecfdf5; --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626; --bad-bg:#fef2f2;
   --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --r:12px;
 }
 @media(prefers-color-scheme:dark){:root{
-  --bg:#08100f; --card:#0f1a1b; --ink:#e8f0ef; --mut:#93a5a6; --mut2:#6e8385;
-  --line:#1d2c2e; --line2:#27393b; --acc:#45c0cf; --acc-ink:#04181b;
-  --ok:#6fc08f; --ok-bg:#132a1f; --warn:#d7ae4e; --warn-bg:#2a2415;
-  --bad:#e2785c; --bad-bg:#2e1c17;
+  --bg:#020817; --card:#0f172a; --ink:#f8fafc; --mut:#94a3b8; --mut2:#64748b;
+  --line:#1e293b; --line2:#334155; --muted:#1e293b;
+  --acc:#60a5fa; --acc-bg:#172554; --acc-ink:#020817;
+  --ok:#34d399; --ok-bg:#062e22; --warn:#fbbf24; --warn-bg:#2e2205;
+  --bad:#f87171; --bad-bg:#2d0f0f;
 }}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -34,6 +37,7 @@ a{color:inherit;text-decoration:none}
 .btn.outline{background:transparent;color:var(--ink);border-color:var(--line2)}
 .btn.sm{padding:6px 14px;font-size:13.5px;border-radius:9px}
 .btn:disabled{opacity:.5;cursor:default;transform:none}
+.btn:hover{box-shadow:0 2px 10px rgba(2,8,23,.12)}
 .kbd{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font-size:11px;
   border:1px solid var(--line2);border-radius:5px;font-family:var(--mono);color:var(--mut)}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
@@ -110,7 +114,7 @@ section.bordered{border-top:1px solid var(--line)}
 h2{font-size:clamp(25px,3.4vw,34px);line-height:1.15;letter-spacing:-.025em;margin:0 0 12px;text-wrap:balance}
 .sec-lead{color:var(--mut);max-width:62ch;margin:0 0 34px}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.c{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:0 1px 2px rgba(2,8,23,.04)}
 .c .n{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--acc);margin-bottom:10px}
 .c h3{margin:0 0 7px;font-size:16.5px}
 .c p{margin:0;color:var(--mut);font-size:14px}
