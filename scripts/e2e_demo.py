@@ -83,9 +83,31 @@ def main() -> int:
             check(page.locator(anchor).count() == 1, f"якорь навигации {anchor} существует")
         overflow = page.evaluate("() => document.documentElement.scrollWidth > window.innerWidth")
         check(not overflow, "нет горизонтальной прокрутки на десктопе")
+        links = page.evaluate("() => [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href'))")
+        bad_links = []
+        for href in sorted(set(links)):
+            if href.startswith("#"):
+                if page.locator(href).count() != 1:
+                    bad_links.append(href)
+            elif href.startswith("/"):
+                if page.request.get(BASE + href).status != 200:
+                    bad_links.append(href)
+        check(not bad_links, "все ссылки главной ведут на существующие разделы и страницы",
+              ", ".join(bad_links) or f"проверено ссылок: {len(set(links))}")
+        check(page.locator("footer .fcol").count() == 3, "футер с тремя колонками на месте")
+        check(page.evaluate("() => { const i=document.querySelector('.cta2 img'); return !!i && i.naturalWidth>0 }"),
+              "иллюстрация блока «Проверьте на своём комплекте» загрузилась")
+        check(page.locator("#trust .fcell").count() == 6, "сетка возможностей: 6 карточек")
+        page.keyboard.press("Tab")
+        focused = page.evaluate("() => document.activeElement.tagName")
+        check(focused == "A", "навигация с клавиатуры: Tab попадает на ссылку", focused)
         page.locator("header .actions a.btn:not(.outline)").click()
         page.wait_for_url("**/app")
         check(page.url.endswith("/app"), "кнопка «Начать анализ» ведёт в сервис")
+        page.go_back(); page.wait_for_load_state("networkidle")
+        check(page.url.rstrip("/") == BASE.rstrip("/"), "кнопка браузера «Назад» возвращает на главную")
+        page.go_forward(); page.wait_for_load_state("networkidle")
+        check(not page.locator("#dl").is_visible(), "до анализа кнопка выгрузки скрыта")
 
         # ---------- рабочий экран до анализа ----------
         print("\n[2] Рабочий экран до анализа")
@@ -99,10 +121,15 @@ def main() -> int:
 
         # ---------- контрольный комплект ----------
         print("\n[3] Контрольный комплект")
+        analyze_calls = []
+        page.on("request", lambda r: analyze_calls.append(1) if r.url.endswith("/api/analyze") else None)
         page.click("#demo")
+        page.evaluate("() => document.querySelector('#demo').click()")   # повторный клик во время разбора
         check(page.locator("#go").is_disabled(), "кнопки блокируются на время разбора")
         wait_analysis(page)
         check(page.locator(".stats").count() == 1, "сводка появилась")
+        check(len(analyze_calls) == 1, "повторный клик во время разбора не запускает второй анализ",
+              f"запросов: {len(analyze_calls)}")
         stats = page.locator(".stat b").all_inner_texts()
         check(stats and stats[0] == "4", "подразделений после: 4", str(stats))
         new_units = page.locator(".u.new").all_inner_texts()
