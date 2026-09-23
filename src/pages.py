@@ -95,8 +95,6 @@ h1{font-size:clamp(38px,5.6vw,68px);line-height:1.04;letter-spacing:-.045em;font
   box-shadow:0 24px 60px rgba(9,9,11,.09)}
 .shot{border:1px solid var(--line);border-radius:11px;overflow:hidden;position:relative;background:var(--card)}
 .shot img{display:block;width:100%;height:auto}
-.fade{position:absolute;inset:auto 0 0 0;height:42%;pointer-events:none;
-  background:linear-gradient(to top,var(--bg),transparent)}
 
 .mock{display:grid;grid-template-columns:186px 1fr;min-height:340px;font-size:12px;text-align:left}
 .mock .rail{border-right:1px solid var(--line);padding:10px 9px;background:var(--card)}
@@ -183,7 +181,7 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
 </div></header>
 
 <div class="container shotwrap">
-  <div class="frame"><div class="shot">__PREVIEW__<div class="fade"></div></div></div>
+  <div class="frame"><div class="shot">__PREVIEW__</div></div>
 </div>
 
 <div class="container">
