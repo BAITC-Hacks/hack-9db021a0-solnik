@@ -162,11 +162,32 @@ h2{font-size:clamp(26px,3.3vw,38px);line-height:1.12;letter-spacing:-.035em;marg
 .who{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
   padding:5px 10px;border-radius:7px;white-space:nowrap;background:var(--muted);color:var(--mut)}
 .who.ai{background:var(--ink);color:var(--bg)}
-.final{text-align:center;padding-block:96px;border-top:1px solid var(--line)}
-.final h2{margin:0 auto 14px;max-width:24ch}
-.final p{color:var(--mut);max-width:52ch;margin:0 auto 30px}
-footer{border-top:1px solid var(--line);padding-block:28px;color:var(--mut2);font-size:13.5px}
-footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cta2{padding-block:96px;border-top:1px solid var(--line)}
+.cta2 .grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.cta2 .art{background:#f4f4f5;border-radius:12px;min-height:380px;display:flex;
+  align-items:center;justify-content:center}
+.cta2 .art img{width:150px;height:auto;display:block}
+.cta2 h2{font-size:clamp(30px,4vw,46px);line-height:1.08;letter-spacing:-.035em;margin:0 0 20px;
+  max-width:16ch;font-weight:600}
+.cta2 p{color:var(--mut);font-size:clamp(16px,1.5vw,18px);max-width:46ch;margin:0 0 30px}
+.cta2 .actions{display:flex;gap:10px;flex-wrap:wrap}
+@media(max-width:900px){.cta2 .grid{grid-template-columns:1fr;gap:34px}
+  .cta2 .art{min-height:260px}.cta2 .text{text-align:center}
+  .cta2 h2,.cta2 p{margin-left:auto;margin-right:auto}.cta2 .actions{justify-content:center}}
+
+footer{border-top:1px solid var(--line);background:var(--surface);color:var(--mut);font-size:14px}
+.ftop{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:40px;padding-block:56px 44px}
+.fbrand img{height:28px;width:auto;display:block;margin-bottom:16px}
+.fbrand p{margin:0;max-width:34ch;font-size:14px;line-height:1.6}
+.fcol h4{margin:0 0 14px;font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-.005em}
+.fcol ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.fcol a{color:var(--mut);transition:color .14s}
+.fcol a:hover{color:var(--ink)}
+.fcol li{font-size:14px}
+.fbottom{border-top:1px solid var(--line);padding-block:22px;display:flex;justify-content:space-between;
+  gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut2)}
+@media(max-width:820px){.ftop{grid-template-columns:1fr 1fr}.fbrand{grid-column:1/-1}}
+@media(max-width:480px){.ftop{grid-template-columns:1fr}}
 @media(max-width:880px){.cards{grid-template-columns:1fr}
   .step{grid-template-columns:28px 1fr}.step .who{grid-column:2}
   .mock{grid-template-columns:1fr}.mock .rail{display:none}
@@ -258,15 +279,44 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
   </section>
 </div>
 
-<div class="final"><div class="container">
-  <h2>Проверьте на своём комплекте</h2>
-  <p>Загрузите два комплекта документов — или запустите анализ на контрольном, он уже в сервисе.</p>
-  <a class="btn" href="/app">Начать анализ →</a>
-</div></div>
+<section class="cta2"><div class="container"><div class="grid">
+  <div class="art"><img src="/static/logo-mark.png" alt=""></div>
+  <div class="text">
+    <h2>Проверьте на своём комплекте</h2>
+    <p>Загрузите положения «до» и «после» реорганизации — или запустите разбор на контрольном комплекте из кейса. Через минуту вы увидите потерянные, задвоенные и ставшие общими функции с пунктом-основанием для каждого вывода.</p>
+    <div class="actions">
+      <a class="btn" href="/app">Начать анализ</a>
+      <a class="btn outline" href="#how">Как это работает</a>
+    </div>
+  </div>
+</div></div></section>
 
 <footer><div class="container">
-  <span>OrgTrace · трассировка функций при реорганизации</span>
-  <span>HackAlem AI 2026 · команда Solnik</span>
+  <div class="ftop">
+    <div class="fbrand">
+      <img src="/static/logo.png" alt="OrgTrace">
+      <p>Трассировка функций при реорганизации: потери, дублирование и конфликт интересов — со ссылкой на пункт документа.</p>
+    </div>
+    <div class="fcol"><h4>Продукт</h4><ul>
+      <li><a href="/app">Рабочий экран</a></li>
+      <li><a href="#how">Как работает</a></li>
+      <li><a href="#trust">Доверие к выводам</a></li>
+    </ul></div>
+    <div class="fcol"><h4>Задача</h4><ul>
+      <li><a href="#problem">Риски реорганизации</a></li>
+      <li><a href="/app">Контрольный комплект</a></li>
+      <li><a href="#trust">Заключение в Word</a></li>
+    </ul></div>
+    <div class="fcol"><h4>Хакатон</h4><ul>
+      <li>HackAlem AI 2026</li>
+      <li>Спец-трек Казахтелеком</li>
+      <li>Команда Solnik</li>
+    </ul></div>
+  </div>
+  <div class="fbottom">
+    <span>© 2026 OrgTrace</span>
+    <span>Выводы носят рекомендательный характер и требуют проверки ответственным сотрудником.</span>
+  </div>
 </div></footer>
 </body></html>
 """.replace("__BASE__", BASE_CSS)
