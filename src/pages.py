@@ -121,6 +121,27 @@ h1{font-size:clamp(38px,5.6vw,68px);line-height:1.04;letter-spacing:-.045em;font
 .mock .card p{margin:3px 0 0;color:var(--mut);font-size:11.5px}
 
 section{padding-block:80px;border-top:1px solid var(--line)}
+/* сетка возможностей: пунктирные границы и клетчатый узор в углу карточки */
+.features h2.center,.features .center{text-align:center;margin-left:auto;margin-right:auto}
+.features h2.center{max-width:none}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px dashed var(--line2);
+  border-left:1px dashed var(--line2)}
+.fcell{position:relative;overflow:hidden;padding:26px 26px 30px;
+  border-right:1px dashed var(--line2);border-bottom:1px dashed var(--line2)}
+.fpat{pointer-events:none;position:absolute;top:0;left:50%;margin:-8px 0 0 -80px;width:100%;height:100%;
+  -webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+.fpat-in{position:absolute;inset:0;background:linear-gradient(90deg,rgba(9,9,11,.05),rgba(9,9,11,.01));
+  -webkit-mask-image:radial-gradient(farthest-side at top,#000,transparent);
+  mask-image:radial-gradient(farthest-side at top,#000,transparent)}
+.fpat svg{position:absolute;inset:0}
+.fpat path{stroke:rgba(9,9,11,.30)}
+.fpat rect{fill:rgba(9,9,11,.06)}
+.ficon{width:24px;height:24px;color:var(--ink);opacity:.78;position:relative}
+.fcell h3{position:relative;margin:38px 0 0;font-size:15.5px;font-weight:500;letter-spacing:-.015em}
+.fcell p{position:relative;margin:7px 0 0;color:var(--mut);font-size:13.5px;font-weight:300;line-height:1.55}
+@media(max-width:900px){.fgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.fgrid{grid-template-columns:1fr}}
+
 h2{font-size:clamp(26px,3.3vw,38px);line-height:1.12;letter-spacing:-.035em;margin:0 0 14px;
   font-weight:700;max-width:20ch}
 .sec-lead{color:var(--mut);max-width:60ch;margin:0 0 40px;font-size:16px}
@@ -223,16 +244,16 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
     </div>
   </section>
 
-  <section id="trust">
-    <h2>Почему выводам можно верить</h2>
-    <p class="sec-lead">Модель, которой отдали документ целиком, уверенно называет номера пунктов, которых не существует. Для анализа реорганизации это недопустимо: вывод, который нельзя проверить, бесполезен.</p>
-    <div class="cards">
-      <div class="c"><div class="n">ГАРАНТИЯ</div><h3>Ссылку даёт код</h3>
-        <p>Номера пунктов и принадлежность функций извлекаются из структуры документа, а не генерируются.</p></div>
-      <div class="c"><div class="n">ПРОВЕРКА</div><h3>Агент ищет подтверждение</h3>
-        <p>Цитаты он получает только через инструменты. Вердикт «функция найдена» без пункта отклоняется.</p></div>
-      <div class="c"><div class="n">ЧЕСТНОСТЬ</div><h3>«Не уверен» — нормальный ответ</h3>
-        <p>Где данных не хватает, система говорит об этом прямо и отдаёт решение человеку.</p></div>
+  <section id="trust" class="features">
+    <h2 class="center">Точно. Проверяемо. Честно.</h2>
+    <p class="sec-lead center">Модель, которой отдали документ целиком, уверенно называет пункты, которых не существует. Здесь каждый вывод можно проверить по документу.</p>
+    <div class="fgrid">
+      <div class="fcell"><div class="fpat" aria-hidden="true"><div class="fpat-in"><svg width="100%" height="100%"><defs><pattern id="fg3" width="20" height="20" patternUnits="userSpaceOnUse" x="-12" y="4"><path d="M.5 20V.5H20" fill="none"/></pattern></defs><rect width="100%" height="100%" fill="url(#fg3)" stroke-width="0"/><svg x="-12" y="4" style="overflow:visible"><rect x="160" y="100" width="21" height="21"/><rect x="160" y="60" width="21" height="21"/><rect x="200" y="120" width="21" height="21"/><rect x="140" y="100" width="21" height="21"/><rect x="140" y="80" width="21" height="21"/></svg></svg></div></div><svg class="ficon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg><h3>Ссылку даёт код</h3><p>Номера пунктов извлекаются из структуры документа, а не генерируются моделью.</p></div>
+      <div class="fcell"><div class="fpat" aria-hidden="true"><div class="fpat-in"><svg width="100%" height="100%"><defs><pattern id="fg4" width="20" height="20" patternUnits="userSpaceOnUse" x="-12" y="4"><path d="M.5 20V.5H20" fill="none"/></pattern></defs><rect width="100%" height="100%" fill="url(#fg4)" stroke-width="0"/><svg x="-12" y="4" style="overflow:visible"><rect x="160" y="60" width="21" height="21"/><rect x="140" y="120" width="21" height="21"/><rect x="200" y="80" width="21" height="21"/><rect x="160" y="20" width="21" height="21"/><rect x="140" y="20" width="21" height="21"/></svg></svg></div></div><svg class="ficon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="m8.5 11 1.8 1.8 3.4-3.6"/></svg><h3>Агент ищет подтверждение</h3><p>Каждое подозрение он проверяет по документу и ссылается только на пункт, который сам получил.</p></div>
+      <div class="fcell"><div class="fpat" aria-hidden="true"><div class="fpat-in"><svg width="100%" height="100%"><defs><pattern id="fg5" width="20" height="20" patternUnits="userSpaceOnUse" x="-12" y="4"><path d="M.5 20V.5H20" fill="none"/></pattern></defs><rect width="100%" height="100%" fill="url(#fg5)" stroke-width="0"/><svg x="-12" y="4" style="overflow:visible"><rect x="180" y="120" width="21" height="21"/><rect x="180" y="120" width="21" height="21"/><rect x="140" y="80" width="21" height="21"/><rect x="160" y="120" width="21" height="21"/><rect x="140" y="40" width="21" height="21"/></svg></svg></div></div><svg class="ficon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7"/><path d="M12 17h.01"/></svg><h3>«Не уверен» — нормальный ответ</h3><p>Где данных не хватает, система говорит об этом прямо и отдаёт решение человеку.</p></div>
+      <div class="fcell"><div class="fpat" aria-hidden="true"><div class="fpat-in"><svg width="100%" height="100%"><defs><pattern id="fg6" width="20" height="20" patternUnits="userSpaceOnUse" x="-12" y="4"><path d="M.5 20V.5H20" fill="none"/></pattern></defs><rect width="100%" height="100%" fill="url(#fg6)" stroke-width="0"/><svg x="-12" y="4" style="overflow:visible"><rect x="140" y="80" width="21" height="21"/><rect x="180" y="20" width="21" height="21"/><rect x="140" y="40" width="21" height="21"/><rect x="200" y="120" width="21" height="21"/><rect x="180" y="60" width="21" height="21"/></svg></svg></div></div><svg class="ficon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg><h3>Потери, дубли, конфликты</h3><p>Три риска реорганизации в одном разборе — с разделами и счётчиками по каждому.</p></div>
+      <div class="fcell"><div class="fpat" aria-hidden="true"><div class="fpat-in"><svg width="100%" height="100%"><defs><pattern id="fg7" width="20" height="20" patternUnits="userSpaceOnUse" x="-12" y="4"><path d="M.5 20V.5H20" fill="none"/></pattern></defs><rect width="100%" height="100%" fill="url(#fg7)" stroke-width="0"/><svg x="-12" y="4" style="overflow:visible"><rect x="180" y="40" width="21" height="21"/><rect x="200" y="120" width="21" height="21"/><rect x="140" y="20" width="21" height="21"/><rect x="140" y="60" width="21" height="21"/><rect x="140" y="100" width="21" height="21"/></svg></svg></div></div><svg class="ficon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg><h3>Заключение в Word</h3><p>Таблица отклонений с пунктами-основаниями — документ, который можно нести руководителю.</p></div>
+      <div class="fcell"><div class="fpat" aria-hidden="true"><div class="fpat-in"><svg width="100%" height="100%"><defs><pattern id="fg8" width="20" height="20" patternUnits="userSpaceOnUse" x="-12" y="4"><path d="M.5 20V.5H20" fill="none"/></pattern></defs><rect width="100%" height="100%" fill="url(#fg8)" stroke-width="0"/><svg x="-12" y="4" style="overflow:visible"><rect x="160" y="60" width="21" height="21"/><rect x="200" y="40" width="21" height="21"/><rect x="160" y="120" width="21" height="21"/><rect x="140" y="20" width="21" height="21"/><rect x="160" y="40" width="21" height="21"/></svg></svg></div></div><svg class="ficon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6Z"/><path d="m9 12 2 2 4-4"/></svg><h3>Работает без сети</h3><p>Если OpenAI недоступен, разбор продолжается в резервном режиме без модели.</p></div>
     </div>
   </section>
 </div>
