@@ -10,15 +10,17 @@ import traceback
 import zipfile
 
 from fastapi import FastAPI, File, UploadFile
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from .compare import run
 from .export import build_docx
 from .app_page import APP as WORKSPACE_PAGE
-from .pages import LANDING
+from .pages import MOCK_PREVIEW, render_landing
 from .report import render_conclusion
 
 app = FastAPI(title="Анализ организационной структуры и функционала")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 SAMPLE_BEFORE = "data/samples/polozhenie_red8.docx"
 SAMPLE_AFTER = "data/samples/polozhenie_red9.docx"
@@ -65,10 +67,22 @@ def _save(upload: UploadFile) -> str:
     return path
 
 
+SCREENSHOT = "static/app-preview.png"
+
+
 @app.get("/", response_class=HTMLResponse)
 def landing() -> str:
-    """Стартовая страница: что делает сервис и переход в рабочий экран."""
-    return LANDING
+    """Стартовая страница: что делает сервис и переход в рабочий экран.
+
+    В рамку подставляется настоящий скриншот рабочего экрана, если он положен
+    в static/app-preview.png; иначе показывается встроенный макет интерфейса.
+    """
+    if os.path.exists(SCREENSHOT):
+        preview = ('<img src="/static/app-preview.png" alt="Рабочий экран сервиса: '
+                   'разбор комплектов документов">')
+    else:
+        preview = MOCK_PREVIEW
+    return render_landing(preview)
 
 
 @app.get("/app", response_class=HTMLResponse)

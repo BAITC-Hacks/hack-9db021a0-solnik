@@ -290,4 +290,7 @@ MOCK_PREVIEW = """
 </div>
 """
 
-LANDING = LANDING.replace("__PREVIEW__", MOCK_PREVIEW)
+
+def render_landing(preview_html: str) -> str:
+    """preview_html — либо <img> с настоящим скриншотом, либо встроенный макет."""
+    return LANDING.replace("__PREVIEW__", preview_html)
