@@ -11,6 +11,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .compare import run
+from .app_page import APP as WORKSPACE_PAGE
 from .pages import LANDING
 from .report import render_conclusion
 
@@ -50,7 +51,7 @@ def landing() -> str:
 @app.get("/app", response_class=HTMLResponse)
 def workspace() -> str:
     """Рабочий экран: загрузка комплектов и разбор выводов."""
-    return PAGE
+    return WORKSPACE_PAGE
 
 
 @app.post("/api/analyze")
