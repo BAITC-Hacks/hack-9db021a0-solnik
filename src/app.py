@@ -11,6 +11,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .compare import run
+from .pages import LANDING
 from .report import render_conclusion
 
 app = FastAPI(title="Анализ организационной структуры и функционала")
@@ -41,7 +42,14 @@ def _save(upload: UploadFile) -> str:
 
 
 @app.get("/", response_class=HTMLResponse)
-def index() -> str:
+def landing() -> str:
+    """Стартовая страница: что делает сервис и переход в рабочий экран."""
+    return LANDING
+
+
+@app.get("/app", response_class=HTMLResponse)
+def workspace() -> str:
+    """Рабочий экран: загрузка комплектов и разбор выводов."""
     return PAGE
 
 
@@ -104,6 +112,7 @@ pre.conc{white-space:pre-wrap;font:14px/1.6 "Segoe UI",system-ui,sans-serif;marg
 .tc b{color:var(--acc)}
 </style>
 <div class="wrap">
+<a href="/" style="color:var(--acc);font-size:13px;text-decoration:none">← на главную</a>
 <h1>Анализ организационной структуры и функционала</h1>
 <p class="sub">Сравнение комплектов «до» и «после» реорганизации: потеря функций, дублирование, конфликт интересов — со ссылкой на пункт документа.</p>
 
