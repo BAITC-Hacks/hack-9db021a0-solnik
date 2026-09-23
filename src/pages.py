@@ -164,9 +164,8 @@ h2{font-size:clamp(26px,3.3vw,38px);line-height:1.12;letter-spacing:-.035em;marg
 .who.ai{background:var(--ink);color:var(--bg)}
 .cta2{padding-block:96px;border-top:1px solid var(--line)}
 .cta2 .grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
-.cta2 .art{background:#f4f4f5;border-radius:12px;min-height:380px;display:flex;
-  align-items:center;justify-content:center}
-.cta2 .art img{width:150px;height:auto;display:block}
+.cta2 .art{background:#f4f4f5;border-radius:12px;overflow:hidden;aspect-ratio:4/3}
+.cta2 .art img{width:100%;height:100%;object-fit:cover;display:block}
 .cta2 h2{font-size:clamp(30px,4vw,46px);line-height:1.08;letter-spacing:-.035em;margin:0 0 20px;
   max-width:16ch;font-weight:600}
 .cta2 p{color:var(--mut);font-size:clamp(16px,1.5vw,18px);max-width:46ch;margin:0 0 30px}
@@ -280,7 +279,7 @@ footer{border-top:1px solid var(--line);background:var(--surface);color:var(--mu
 </div>
 
 <section class="cta2"><div class="container"><div class="grid">
-  <div class="art"><img src="/static/logo-mark.png" alt=""></div>
+  <div class="art"><img src="/static/cta.jpg" alt="Два комплекта документов, пункты которых связаны линиями, лупа и отметка проверки"></div>
   <div class="text">
     <h2>Проверьте на своём комплекте</h2>
     <p>Загрузите положения «до» и «после» реорганизации — или запустите разбор на контрольном комплекте из кейса. Через минуту вы увидите потерянные, задвоенные и ставшие общими функции с пунктом-основанием для каждого вывода.</p>
