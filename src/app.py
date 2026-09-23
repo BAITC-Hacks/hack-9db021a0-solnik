@@ -26,6 +26,7 @@ KIND_RU = {
     "function_moved": "Функция передана",
     "duplication": "Дублирование",
     "conflict_of_interest": "Конфликт интересов",
+    "false_positive": "Снято агентом",
 }
 SEV_RU = {"high": "высокий", "medium": "средний", "info": "справочно"}
 
@@ -93,6 +94,13 @@ button:disabled{opacity:.55;cursor:default}
 .tab.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 pre.conc{white-space:pre-wrap;font:14px/1.6 "Segoe UI",system-ui,sans-serif;margin:0}
 .mode{font-size:12px;color:var(--mut)}
+.vf{margin:8px 0;padding:8px 11px;background:var(--okbg);color:var(--ok);font-size:13px;border-left:3px solid var(--ok)}
+.vf.confirmed_lost{background:var(--hibg);color:var(--hi);border-left-color:var(--hi)}
+.vf.uncertain{background:var(--mdbg);color:var(--md);border-left-color:var(--md)}
+.vf details{margin-top:6px}
+.vf summary{cursor:pointer;font-size:12px;opacity:.85}
+.tc{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;margin-top:5px;color:var(--mut);line-height:1.45}
+.tc b{color:var(--acc)}
 </style>
 <div class="wrap">
 <h1>Анализ организационной структуры и функционала</h1>
@@ -134,7 +142,7 @@ function render(){
   const L=data.labels, before=data.units_before.map(u=>u.code);
   const units=data.units_after.map(u=>
     `<span class="u ${before.includes(u.code)?'':'new'}">${u.code} · функций ${u.functions.length}</span>`).join('');
-  const kinds=['all','function_lost','duplication','function_moved','conflict_of_interest','unit_created'];
+  const kinds=['all','function_lost','false_positive','duplication','function_moved','unit_created'];
   const tabs=kinds.map(k=>`<button class="tab ${filter===k?'on':''}" data-k="${k}">${
     k==='all'?'Все выводы ('+data.findings.length+')':(L.kind[k]||k)+' ('+count(k)+')'}</button>`).join('');
 
@@ -142,6 +150,12 @@ function render(){
     <div class="f ${f.severity}">
       <div class="meta">${L.kind[f.kind]||f.kind} · риск ${L.severity[f.severity]} · уверенность ${f.confidence}</div>
       <h3>${f.title}</h3><p>${f.detail}</p>
+      ${f.verification?`<div class="vf ${f.verification.verdict}">Агент-верификатор: ${f.verification.verdict_ru}
+        ${f.verification.evidence_cite?' · '+f.verification.evidence_cite:''}
+        ${f.verification.trace.length?`<details><summary>показать работу агента (${f.verification.trace.length} вызова инструментов)</summary>
+          ${f.verification.trace.map((t,i)=>`<div class="tc"><b>${i+1}. ${t.tool}</b>(${JSON.stringify(t.args).slice(0,150)})
+          <span>→ ${String(t.result).slice(0,220)}…</span></div>`).join('')}</details>`:''}
+      </div>`:''}
       ${f.sources.map(s=>`<div class="src"><b>${s.cite}</b> — ${s.quote.slice(0,260)}</div>`).join('')}
     </div>`).join('') || '<div class="panel">Ничего не найдено.</div>';
 
@@ -152,6 +166,7 @@ function render(){
       <div class="stat"><b>${count('function_lost')}</b><span>возможных потерь</span></div>
       <div class="stat"><b>${count('duplication')}</b><span>дублирований</span></div>
       <div class="stat"><b>${count('function_moved')}</b><span>передано</span></div>
+      <div class="stat"><b>${count('false_positive')}</b><span>снято агентом</span></div>
     </div>
     <div class="units">${units}</div>
     <div class="panel" style="margin-top:18px"><pre class="conc">${data.conclusion}</pre>

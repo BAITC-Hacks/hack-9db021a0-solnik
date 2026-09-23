@@ -123,3 +123,35 @@ THRESHOLDS = {
     "embeddings": {"match": 0.62, "weak": 0.50, "duplicate": 0.72},
     "lexical": {"match": 0.45, "weak": 0.33, "duplicate": 0.55},
 }
+
+
+class Index:
+    """Поисковый индекс по корпусу: векторы считаются один раз.
+
+    Инструмент агента вызывается многократно, и без индекса каждый вызов
+    заново отправлял бы весь документ в эмбеддинги — это и было главным
+    источником задержки.
+    """
+
+    def __init__(self, texts: list[str]):
+        self.texts = texts
+        vecs = _embed(texts)
+        if vecs:
+            self.mode = "embeddings"
+            self._vecs = vecs
+        else:
+            self.mode = "lexical"
+            self._idf = _idf(texts)
+            self._tf = [_tf(t) for t in texts]
+
+    def search(self, query: str, limit: int = 4) -> list[tuple[int, float]]:
+        if self.mode == "embeddings":
+            qv = _embed([query])
+            if not qv:
+                return []
+            scores = [(i, _cos_vec(qv[0], v)) for i, v in enumerate(self._vecs)]
+        else:
+            q = _tf(query)
+            scores = [(i, _cos(q, t, self._idf)) for i, t in enumerate(self._tf)]
+        scores.sort(key=lambda p: p[1], reverse=True)
+        return scores[:limit]

@@ -6,8 +6,10 @@
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, asdict
 
+from .agent import DocumentTools, verify_loss
 from .align import Similarity, THRESHOLDS
 from .orgmap import Unit, build
 
@@ -31,6 +33,7 @@ class Finding:
     detail: str
     confidence: float
     sources: list[Source] = field(default_factory=list)
+    verification: dict | None = None   # решение агента-верификатора
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -214,15 +217,66 @@ def find_conflicts(after: dict[str, Unit]) -> list[Finding]:
     return findings
 
 
-def run(before_path: str, after_path: str) -> Report:
-    before, _ = build(before_path)
-    after, _ = build(after_path)
+VERDICT_RU = {
+    "confirmed_lost": "потеря подтверждена агентом",
+    "found_elsewhere": "функция найдена в другом пункте — ложная тревога",
+    "uncertain": "агент не смог подтвердить — нужна проверка человеком",
+}
+
+
+def verify_findings(findings: list[Finding], after_clauses, after_units,
+                    limit: int = 12, workers: int = 6) -> list[Finding]:
+    """Второй круг: агент ищет подтверждение каждой возможной потере.
+
+    Подтверждённые потери остаются высоким риском, найденные в другом месте
+    понижаются до справочных, неопределённые честно помечаются как требующие
+    человека. Ничего не удаляется: пользователь видит и вывод, и его проверку.
+    """
+    tools = DocumentTools(after_clauses, after_units)
+    targets = [f for f in findings if f.kind == "function_lost"][:limit]
+    if not targets:
+        return findings
+
+    def check(f: Finding):
+        quote = f.sources[0].quote if f.sources else f.title
+        unit = f.title.split()[-1]
+        return f, verify_loss(quote, unit, tools)
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for f, v in pool.map(check, targets):
+            if v is None:
+                continue
+            f.verification = v.to_dict()
+            f.verification["verdict_ru"] = VERDICT_RU.get(v.verdict, v.verdict)
+            if v.verdict == "found_elsewhere":
+                f.kind = "false_positive"
+                f.severity = "info"
+                f.title = f.title.replace("Возможная потеря функции", "Снято агентом: функция сохранена")
+                f.detail = (f"Первичное сопоставление отметило возможную потерю, но агент нашёл "
+                            f"функцию в комплекте «после»: {v.evidence_cite}. {v.reason}")
+                if v.evidence_cite:
+                    f.sources.append(Source("подтверждение агента", v.evidence_cite, v.reason))
+            elif v.verdict == "confirmed_lost":
+                f.severity = "high"
+                f.detail += f" Проверено агентом: {v.reason}"
+            else:
+                f.severity = "medium"
+                f.detail += f" Агент не смог подтвердить: {v.reason}"
+    return findings
+
+
+def run(before_path: str, after_path: str, verify: bool = True) -> Report:
+    before, before_clauses = build(before_path)
+    after, after_clauses = build(after_path)
 
     findings = compare_units(before, after)
     fn_findings, mode = compare_functions(before, after)
     findings += fn_findings
     findings += find_duplication(after)
     findings += find_conflicts(after)
+
+    if verify:
+        findings = verify_findings(findings, after_clauses, after)
 
     order = {"high": 0, "medium": 1, "info": 2}
     findings.sort(key=lambda f: (order[f.severity], -f.confidence))
@@ -237,7 +291,9 @@ def run(before_path: str, after_path: str) -> Report:
 
 
 if __name__ == "__main__":
-    rep = run("data/samples/polozhenie_red8.docx", "data/samples/polozhenie_red9.docx")
+    import sys
+    rep = run("data/samples/polozhenie_red8.docx", "data/samples/polozhenie_red9.docx",
+              verify="--no-verify" not in sys.argv)
     print(f"режим сопоставления: {rep.mode}")
     counts: dict[str, int] = {}
     for f in rep.findings:
