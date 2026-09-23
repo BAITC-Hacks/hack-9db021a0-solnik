@@ -1,0 +1,20 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.server.log
+resp.json
+*.tmp
+
+# рабочие заметки команды, не часть решения
+docs/BRIEF.md
+docs/RULES_CHECKLIST.md
+docs/HOURLY.md
+docs/TASK_CRITERIA.md
+# материалы другой темы, к задаче не относятся
+scrape_code.py
+data/stroykodeks.jsonl
+data/emca_kaz.csv
+data/fema154_very_high.json
+docs/fema154_forms.pdf
