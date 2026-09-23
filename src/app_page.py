@@ -50,6 +50,7 @@ body{background:var(--surface)}
 .side .top{height:62px;display:flex;align-items:center;gap:10px;padding:0 18px;
   border-bottom:1px solid var(--line);flex-shrink:0;font-weight:700;font-size:16px;
   letter-spacing:-.03em}
+.side .top img{height:23px;width:auto;display:block}
 .side .top em{font-style:normal;font-size:11px;font-weight:500;color:var(--mut2);
   font-family:var(--mono);letter-spacing:0}
 .side nav{flex:1;overflow-y:auto;padding:12px 10px}
@@ -306,6 +307,7 @@ renderNav();
 APP = """<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OrgTrace — рабочий экран</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap">
@@ -314,7 +316,7 @@ APP = """<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <div class="scrim" id="scrim"></div>
 
 <aside class="side">
-  <div class="top">Org<span style="color:var(--mut);margin-left:-10px">Trace</span> <em>v1</em></div>
+  <a class="top" href="/"><img src="/static/logo.png" alt="OrgTrace"><em>v1</em></a>
   <nav id="nav"></nav>
   <div class="bottom"><a class="it" href="/">%(home)s<span class="lbl">На главную</span></a></div>
 </aside>

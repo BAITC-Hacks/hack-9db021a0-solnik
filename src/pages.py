@@ -51,6 +51,7 @@ LANDING = """
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OrgTrace — трассировка функций при реорганизации</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap">
@@ -62,7 +63,8 @@ __BASE__
 nav{border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:20}
 nav .container{display:flex;align-items:center;justify-content:space-between;height:66px;gap:20px}
 .brandrow{display:flex;align-items:center;gap:34px}
-.brand{font-weight:800;font-size:19px;letter-spacing:-.04em}
+.brand{display:flex;align-items:center}
+.brand img{height:28px;width:auto;display:block}
 .navlinks{display:flex;gap:26px}
 .navlinks a{font-size:14.5px;font-weight:500;color:var(--ink);opacity:.9}
 .navlinks a:hover{opacity:.6}
@@ -151,7 +153,7 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
 
 <nav><div class="container">
   <div class="brandrow">
-    <div class="brand">Org<span style="color:var(--mut)">Trace</span></div>
+    <a class="brand" href="/"><img src="/static/logo.png" alt="OrgTrace"></a>
     <div class="navlinks">
       <a href="#problem">Задача</a>
       <a href="#how">Как работает</a>
